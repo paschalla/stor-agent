@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function for strict ACL enforcement
+    function isAdmin() {
+      // Checks if the user is authenticated, has an email, and exists in the administrators collection.
+      // Assuming /roles/administrators is a document, we check for a subcollection `users` 
+      // where the document ID is the user's email.
+      return request.auth != null && 
+             request.auth.token.email != null &&
+             exists(/databases/$(database)/documents/roles/administrators/users/$(request.auth.token.email));
+    }
+
+    // Transactions collection: Ledger (append-only)
+    match /transactions/{transactionId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // Append-only ledger
+    }
+
+    // Inventory collection: Supports soft-delete
+    match /inventory/{itemId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin(); // Allows updating the deleted flag to true
+      allow delete: if false; // Hard-deletes strictly prohibited
+    }
+
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -37,6 +37,7 @@ export default function Layout() {
           <nav className="flex-1 px-4 py-6 space-y-2">
             {[
               { name: 'Dashboard', path: '/' },
+              { name: 'Scan Items', path: '/scan' },
               { name: 'Browse', path: '/browse' },
               { name: 'Finances', path: '/finances' },
               { name: 'Summary', path: '/summary' },

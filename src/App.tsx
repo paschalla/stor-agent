@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import Scan from './pages/Scan';
 import Browse from './pages/Browse';
 import Finances from './pages/Finances';
 import Summary from './pages/Summary';
@@ -11,6 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="scan" element={<Scan />} />
           <Route path="browse" element={<Browse />} />
           <Route path="finances" element={<Finances />} />
           <Route path="summary" element={<Summary />} />

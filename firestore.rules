@@ -2,11 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function for strict ACL enforcement
+    // =========================================================================
+    // DUAL-ADMIN ACL (Access Control List)
+    // =========================================================================
+    // Helper function for strict ACL enforcement using a Dual-Admin approach.
+    // Checks if the user is authenticated, has an email, and exists in the 
+    // administrators collection (/roles/administrators/users/{email}).
     function isAdmin() {
-      // Checks if the user is authenticated, has an email, and exists in the administrators collection.
-      // Assuming /roles/administrators is a document, we check for a subcollection `users` 
-      // where the document ID is the user's email.
       return request.auth != null && 
              request.auth.token.email != null &&
              exists(/databases/$(database)/documents/roles/administrators/users/$(request.auth.token.email));
@@ -15,15 +17,30 @@ service cloud.firestore {
     // Transactions collection: Ledger (append-only)
     match /transactions/{transactionId} {
       allow read: if isAdmin();
-      allow create: if isAdmin();
+      // Ensure the transaction is bound to the actual authenticated user to prevent spoofing
+      allow create: if isAdmin() && 
+                    request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; // Append-only ledger
     }
 
-    // Inventory collection: Supports soft-delete
+    // =========================================================================
+    // SOFT DELETION LOGIC
+    // =========================================================================
+    // Inventory collection: Supports soft-delete.
+    // Hard deletes are prohibited to maintain data integrity. Instead, items 
+    // are marked as deleted (deleted: true).
     match /inventory/{itemId} {
       allow read: if isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin(); // Allows updating the deleted flag to true
+      allow update: if isAdmin() &&
+                    // Cannot update an item that is already deleted
+                    (!("deleted" in resource.data) || resource.data.deleted == false) &&
+                    // If applying soft-delete, no other fields can be modified
+                    (
+                      !("deleted" in request.resource.data) || 
+                      request.resource.data.deleted == false || 
+                      (request.resource.data.deleted == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted']))
+                    );
       allow delete: if false; // Hard-deletes strictly prohibited
     }
 

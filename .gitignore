@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.firebase/
+playwright-report/
+test-results/
+Gemini-Generated-Image-*.png
+Screenshot_*.png
+functions/lib/
+functions/package-lock.json
+

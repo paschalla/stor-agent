@@ -1,8 +1,20 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // =========================================================================
+    // DUAL-ADMIN ACL (Access Control List)
+    // =========================================================================
+    // Ensures strict ACL enforcement using a Dual-Admin approach by checking if
+    // the authenticated user's email exists in the Firestore administrators list.
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.email != null &&
+             firestore.exists(/databases/(default)/documents/roles/administrators/users/$(request.auth.token.email));
+    }
+
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }
